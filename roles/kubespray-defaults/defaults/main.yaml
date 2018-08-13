@@ -258,6 +258,7 @@ openstack_lbaas_monitor_max_retries: "3"
 ## 'RBAC' modes are tested. Order is important.
 authorization_modes: ['Node', 'RBAC']
 rbac_enabled: "{{ 'RBAC' in authorization_modes or kubeadm_enabled }}"
+webhook_authz_enabled: "{{ 'Webhook' in authorization_modes }}"
 
 # When enabled, API bearer tokens (including service account tokens) can be used to authenticate to the kubelet’s HTTPS endpoint
 kubelet_authentication_token_webhook: true

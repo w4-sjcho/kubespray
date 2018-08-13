@@ -51,6 +51,10 @@
   apt:
     update_cache: yes
     cache_valid_time: 3600
+  register: make_cache_output
+  until: make_cache_output|succeeded
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
   when: ansible_os_family == "Debian"
   tags:
     - bootstrap-os

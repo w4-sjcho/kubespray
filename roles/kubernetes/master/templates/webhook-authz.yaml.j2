@@ -1,0 +1,17 @@
+# clusters refers to the remote service.
+clusters:
+- name: webhook-authz-cluster
+  cluster:
+    server: {{ kube_webhook_authz_url }}
+
+# users refers to the API server's webhook configuration.
+users:
+- name: webhook-authz-user
+
+# kubeconfig files require a context. Provide one for the API server.
+current-context: webhook-authz
+contexts:
+- context:
+    cluster: webhook-authz-cluster
+    user: webhook-authz-user
+  name: webhook-authz

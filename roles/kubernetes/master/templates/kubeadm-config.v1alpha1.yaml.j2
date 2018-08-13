@@ -84,6 +84,12 @@ apiServerExtraArgs:
   oidc-groups-claim: {{ kube_oidc_groups_claim }}
 {%   endif %}
 {% endif %}
+{% if kube_webhook_token_auth|default(false) %}
+  authentication-token-webhook-config-file: {{ kube_config_dir }}/webhook-token-auth-config.yaml
+{% endif %}
+{% if webhook_authz_enabled %}
+  authorization-webhook-config-file: {{ kube_config_dir }}/webhook-authz.yaml
+{% endif %}
 {% if kube_encrypt_secret_data %}
   experimental-encryption-provider-config: {{ kube_config_dir }}/ssl/secrets_encryption.yaml
 {% endif %}
