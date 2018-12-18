@@ -142,6 +142,16 @@ apiServer:
     hostPath: {{ kube_token_dir }}
     mountPath: {{ kube_token_dir }}
 {% endif %}
+{% if kube_webhook_token_auth|default(false) %}
+  - name: webhook-token-auth-config
+    hostPath: {{ kube_config_dir }}/webhook-token-auth-config.yaml
+    mountPath: {{ kube_config_dir }}/webhook-token-auth-config.yaml
+{% endif %}
+{% if webhook_authz_enabled %}
+  - name: webhook-authz-config
+    hostPath: {{ kube_config_dir }}/webhook-authz.yaml
+    mountPath: {{ kube_config_dir }}/webhook-authz.yaml
+{% endif %}
 {% if kubernetes_audit %}
   - name: {{ audit_policy_name }}
     hostPath: {{ audit_policy_hostpath }}
