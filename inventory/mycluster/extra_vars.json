@@ -1,0 +1,11 @@
+{
+  "docker_version": "18.03",
+  "docker_versioned_pkg": {
+    "latest": "docker-ce",
+    "18.03": "docker-ce=18.06.0~ce~3-0~ubuntu"
+  },
+  "dockerproject_repo_info": {
+    "pkg_repo": "",
+    "repos": []
+  }
+}
