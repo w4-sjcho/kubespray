@@ -1,11 +1,11 @@
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 api:
-{% if groups['kube-master'] | length > 1 and kubeadm_config_api_fqdn is defined %}
+{% if kubeadm_config_api_fqdn is defined %}
   controlPlaneEndpoint: {{ kubeadm_config_api_fqdn }}
   bindPort: {{ loadbalancer_apiserver.port | default(kube_apiserver_port) }}
 {% else %}
-  advertiseAddress: {{ ip | default(ansible_default_ipv4.address) }}
+  advertiseAddress: {{ ip | default(fallback_ips[inventory_hostname]) }}
   bindPort: {{ kube_apiserver_port }}
 {% endif %}
 etcd:
@@ -26,7 +26,7 @@ kubeProxy:
   config:
     mode: {{ kube_proxy_mode }}
 {% if kube_proxy_nodeport_addresses %}
-    nodePortAddresses: [{{ kube_proxy_nodeport_addresses_cidr }}]
+    nodePortAddresses: {{ kube_proxy_nodeport_addresses }}
 {% endif %}
     resourceContainer: ""
 authorizationModes:
@@ -83,6 +83,15 @@ apiServerExtraArgs:
 {%   if kube_oidc_groups_claim is defined %}
   oidc-groups-claim: {{ kube_oidc_groups_claim }}
 {%   endif %}
+{%   if kube_oidc_username_prefix is defined %}
+  oidc-username-prefix: {{ kube_oidc_username_prefix }}
+{%   endif %}
+{%   if kube_oidc_groups_prefix is defined %}
+  oidc-groups-prefix: {{ kube_oidc_groups_prefix }}
+{%   endif %}
+{% endif %}
+{% if kube_webhook_token_auth|default(false) %}
+  authentication-token-webhook-config-file: {{ kube_config_dir }}/webhook-token-auth-config.yaml
 {% endif %}
 {% if kube_webhook_token_auth|default(false) %}
   authentication-token-webhook-config-file: {{ kube_config_dir }}/webhook-token-auth-config.yaml
@@ -152,7 +161,7 @@ controllerManagerExtraVolumes:
   mountPath: {{ kube_config_dir }}/cloud_config
 {% endif %}
 {% endif %}
-{% if kubernetes_audit or kube_basic_auth|default(true) or kube_token_auth|default(true) %}
+{% if kubernetes_audit or kube_basic_auth|default(true) or kube_token_auth|default(true) or kube_webhook_token_auth|default(false) or ssl_ca_dirs|length %}
 apiServerExtraVolumes:
 {% if kube_basic_auth|default(true) %}
 - name: basic-auth-config
@@ -164,6 +173,11 @@ apiServerExtraVolumes:
   hostPath: {{ kube_token_dir }}
   mountPath: {{ kube_token_dir }}
 {% endif %}
+{% if kube_webhook_token_auth|default(false) %}
+- name: webhook-token-auth-config
+  hostPath: {{ kube_config_dir }}/webhook-token-auth-config.yaml
+  mountPath: {{ kube_config_dir }}/webhook-token-auth-config.yaml
+{% endif %}
 {% if kubernetes_audit %}
 - name: {{ audit_policy_name }}
   hostPath: {{ audit_policy_hostpath }}
@@ -174,6 +188,14 @@ apiServerExtraVolumes:
   mountPath: {{ audit_log_mountpath }}
   writable: true
 {% endif %}
+{% endif %}
+{% if ssl_ca_dirs|length %}
+{% for dir in ssl_ca_dirs %}
+- name: {{ dir | regex_replace('^/(.*)$', '\\1' ) | regex_replace('/', '-') }}
+  hostPath: {{ dir }}
+  mountPath: {{ dir }}
+  writable: false
+{% endfor %}
 {% endif %}
 {% endif %}
 {% if cloud_provider is defined and cloud_provider in ["openstack", "azure", "vsphere", "aws", "external"] %}
@@ -195,7 +217,7 @@ schedulerExtraArgs:
 {% endfor %}
 {% endif %}
 apiServerCertSANs:
-{% for san in apiserver_sans.split(' ') | unique %}
+{% for san in apiserver_sans %}
   - {{ san }}
 {% endfor %}
 certificatesDir: {{ kube_cert_dir }}
